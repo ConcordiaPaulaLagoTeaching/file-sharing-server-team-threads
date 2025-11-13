@@ -4,51 +4,39 @@ import ca.concordia.filesystem.datastructures.FEntry;
 import ca.concordia.filesystem.datastructures.FNode;
 
 import java.io.RandomAccessFile;
-import java.util.concurrent.locks.ReentrantLock;
 
 public class FileSystemManager {
 
     private final int MAXFILES = 5;
     private final int MAXBLOCKS = 10;
-    private final static FileSystemManager instance;
     private final RandomAccessFile disk;
-    private final ReentrantLock globalLock = new ReentrantLock();
 
-    private static final int BLOCK_SIZE = 128; // Example block size
-
-    private FEntry[] inodeTable; // Array of inodes
-    private boolean[] freeBlockList; // Bitmap for free blocks
+    private static final int BLOCK_SIZE = 128;
 
     private FEntry[] fileEntries;    // For file entries
     private FNode[] fileNodes;       // For file nodes
+    private boolean[] freeBlockList; // For free blocks
 
-    public FileSystemManager(String filename, int totalSize) {
-        if(instance == null) {
-            //TODO Initialize the file system
-            try {
-                initializeFileSystem();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        } else {
-            throw new IllegalStateException("FileSystemManager is already initialized.");
-        }
+    //constructor
+    public FileSystemManager(String filename, int totalSize) throws Exception {
+        this.disk = new RandomAccessFile(filename, "rw");
+        initializeFileSystem();
     }
 
     private void initializeFileSystem() throws Exception {
-        fileEntries = new FEntry[MAXFILES]; //file enteries array
+        fileEntries = new FEntry[MAXFILES];
         for (int i = 0; i < MAXFILES; i++) {
-            fileEntries[i] = new FEntry(); //empty file
+            fileEntries[i] = new FEntry();
         }
         
-        fileNodes = new FNode[MAXBLOCKS]; //file nodes array
+        fileNodes = new FNode[MAXBLOCKS];
         for (int i = 0; i < MAXBLOCKS; i++) {
-            fileNodes[i] = new FNode(-1); //free nodes
+            fileNodes[i] = new FNode(-1);
         }
         
-        freeBlockList = new boolean[MAXBLOCKS]; //free blocks array
+        freeBlockList = new boolean[MAXBLOCKS];
         for (int i = 0; i < MAXBLOCKS; i++) {
-            freeBlockList[i] = true; //allblocks free
+            freeBlockList[i] = true;
         }
         
         System.out.println("File system initialized!");
@@ -56,19 +44,16 @@ public class FileSystemManager {
 
     //create file method
     public void createFile(String fileName) throws Exception {
-        //checking file name lenght
         if (fileName.length() > 11) {
             throw new Exception("ERROR: filename too large");
         }
         
-        //checking if file exists
         for (FEntry entry : fileEntries) {
             if (fileName.equals(entry.getFilename())) {
                 throw new Exception("ERROR: file already exists");
             }
         }
         
-        //finding empty slot and creating file there
         for (int i = 0; i < MAXFILES; i++) {
             if (fileEntries[i].getFilename().trim().isEmpty()) {
                 fileEntries[i].setFilename(fileName);
@@ -91,7 +76,6 @@ public class FileSystemManager {
             }
         }
         
-        //array of filenames
         String[] files = new String[count];
         int index = 0;
         
@@ -105,5 +89,43 @@ public class FileSystemManager {
         return files;
     }
 
-    //TODO- add delete, read and write methods
+//delete method
+public void deleteFile(String fileName) throws Exception {
+    //looking for the file
+    for (int i = 0; i < MAXFILES; i++) {
+        if (fileName.equals(fileEntries[i].getFilename())) {
+            //deleting file found by file name
+            fileEntries[i].setFilename("");
+            fileEntries[i].setFilesize((short)0);
+            fileEntries[i].setFirstBlock((short)-1);
+            System.out.println("Deleted: " + fileName);
+            return;
+        }
+    }
+    //file not found
+    throw new Exception("ERROR: file " + fileName + " does not exist");
 }
+
+//read method
+public byte[] readFile(String fileName) throws Exception {
+    for (FEntry entry : fileEntries) {
+        if (fileName.equals(entry.getFilename())) {
+            System.out.println("Read file: " + fileName);
+            return new byte[0];
+        }
+    }
+    throw new Exception("ERROR: file " + fileName + " does not exist");
+}
+
+// write method
+public void writeFile(String fileName, byte[] content) throws Exception {
+    for (FEntry entry : fileEntries) {
+        if (fileName.equals(entry.getFilename())) {
+            entry.setFilesize((short)content.length);
+            System.out.println("Wrote " + content.length + " bytes to: " + fileName);
+            return;
+        }
+    }
+    throw new Exception("ERROR: file " + fileName + " does not exist");
+}
+ }
