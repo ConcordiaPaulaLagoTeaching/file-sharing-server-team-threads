@@ -46,8 +46,16 @@ public class FileServer {
                                 writer.println("SUCCESS: File '" + parts[1] + "' deleted.");
                                 break;
                             case "READ":
+                            if (parts.length < 2) {
+                            writer.println("ERR: READ command requires filename");
+                             break;
+                                }
+                            try {
                                 byte[] content = fsManager.read_file(parts[1]);
-                                writer.println("SUCCESS: Read " + content.length + " bytes from '" + parts[1] + "'");
+                                writer.println("SUCCESS: Content of '" + parts[1] + "': " + new String(content));
+                                } catch (Exception e) {
+                                writer.println("ERR: " + e.getMessage());
+                                }
                                 break;
                             case "WRITE":
                                 byte[] data = new byte[0];
@@ -65,7 +73,7 @@ public class FileServer {
                                 writer.println("SUCCESS: Disconnecting.");
                                 return;
                             default:
-                                writer.println("ERROR: Unknown command.");
+                                writer.println("ERR: Unknown command.");
                                 break;
                         }
                     }
