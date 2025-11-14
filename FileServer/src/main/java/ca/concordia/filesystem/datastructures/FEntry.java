@@ -11,7 +11,7 @@ public class FEntry { //
     public FEntry(String filename, short filesize, short firstblock) throws IllegalArgumentException{
         //Check filename is max 11 bytes long
         if (filename.length() > 11) {
-            throw new IllegalArgumentException("Filename cannot be longer than 11 characters.");
+            throw new IllegalArgumentException("file name cannot be longer than 11 strings.");
         }
         this.filename = filename;
         this.filesize = filesize;
@@ -33,7 +33,7 @@ public class FEntry { //
 
     public void setFilename(String filename) {
         if (filename.length() > 11) {
-            throw new IllegalArgumentException("Filename cannot be longer than 11 characters.");
+            throw new IllegalArgumentException("file name cannot be longer than 11 strings.");
         }
         this.filename = filename;
     }
@@ -44,7 +44,7 @@ public class FEntry { //
 
     public void setFilesize(short filesize) {
         if (filesize < 0) {
-            throw new IllegalArgumentException("Filesize cannot be negative.");
+            throw new IllegalArgumentException(" file size cannot be -ve.");
         }
         this.filesize = filesize;
     }
@@ -55,22 +55,22 @@ public class FEntry { //
     public void setFirstBlock (short firstBlock){
         this.firstBlock =firstBlock;
     }
-    // Helper method to check if this FEntry is in use
+    //helper method to check if this FEntry is in use
 
-    public boolean isInUse() {
+    public boolean is_in_use() {
         return filename != null && !filename.isEmpty();
     }
     
-    // Method to mark as free/unused
-    public void markFree() {
+    //method to mark the entry as free
+    public void mark_free() {
         this.filename = "";
         this.filesize = 0;
         this.firstBlock = -1;
     }
     
-    // Calculate the size in bytes that this FEntry will occupy on disk
-    public static int getDiskSize() {
-        return 15; // 11 bytes (filename) + 2 bytes (size) + 2 bytes (firstBlock) = 15 bytes
+    //calculating size
+    public static int get_disk_size() {
+        return 15; // 11b from filename + 2b of size + 2b of firstBlock = 15b
     }
 
 

@@ -27,8 +27,8 @@ public class FNode {
         this.next = next;
     }
     
-    // helper method to check in use
-    public boolean isInUse() {
+    //helper method to check if block is in use
+    public boolean is_in_use() {
         return blockIndex >= 0;  
     }
 }

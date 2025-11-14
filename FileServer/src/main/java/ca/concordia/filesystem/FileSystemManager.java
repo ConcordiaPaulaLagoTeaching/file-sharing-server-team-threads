@@ -23,12 +23,12 @@ private final int BLOCK_SIZE;
         this.MAXBLOCKS = maxBlocks;
         this.BLOCK_SIZE = blockSize;
         this.disk = new RandomAccessFile(filename, "rw");
-        initializeFileSystem();
+        initialize_file_system();
     }
 
 
 
-    private void initializeFileSystem() throws Exception {
+    private void initialize_file_system() throws Exception {
         fileEntries = new FEntry[MAXFILES];
         for (int i = 0; i < MAXFILES; i++) {
             fileEntries[i] = new FEntry();
@@ -44,32 +44,32 @@ private final int BLOCK_SIZE;
             freeBlockList[i] = true;
         }
         
-        System.out.println("File system initialized!");
+        System.out.println("file system initialization done");
     }
 
-    private void saveToDisk() throws Exception {
+    private void save_to_disk() throws Exception {
         disk.seek(0);
         String marker = "FS:" + MAXFILES + "files," + MAXBLOCKS + "blocks";
         disk.write(marker.getBytes());
     }
 
     //checking if block is free
-private boolean isBlockFree(int blockIndex) {
+private boolean is_block_free(int blockIndex) {
     return freeBlockList[blockIndex];
 }
 
 //marking the free block
-private void freeBlock(int blockIndex) {
+private void mark_free_block(int blockIndex) {
     freeBlockList[blockIndex] = true;
 }
 
 //writing zeroes to memory
-private void clearBlockData(int blockIndex) {
-    System.out.println("Would clear block " + blockIndex + " with zeros");
+private void clear_block_data(int blockIndex) {
+    System.out.println("clearing block " + blockIndex + " with zeros");
 }
 
 //finding free block
-private int findFreeBlock() {
+private int find_free_block() {
     for (int i = 0; i < MAXBLOCKS; i++) {
         if (freeBlockList[i]) {
             return i;
@@ -79,12 +79,12 @@ private int findFreeBlock() {
 }
 
 //marking block as used
-private void useBlock(int blockIndex) {
+private void used_block(int blockIndex) {
     freeBlockList[blockIndex] = false;
 }
 
 //calculating blocks needed
-private int calculateBlocksNeeded(int dataSize) {
+private int calculate_blocks_needed(int dataSize) {
     int blocks = dataSize / BLOCK_SIZE;
     if (dataSize % BLOCK_SIZE != 0) {
         blocks++; 
@@ -93,14 +93,14 @@ private int calculateBlocksNeeded(int dataSize) {
 }
 
     //create file method
-    public void createFile(String fileName) throws Exception {
+    public void create_file(String fileName) throws Exception {
         if (fileName.length() > 11) {
-            throw new Exception("ERROR: filename too large");
+            throw new Exception("ERR: file is too large");
         }
         
         for (FEntry entry : fileEntries) {
             if (fileName.equals(entry.getFilename())) {
-                throw new Exception("ERROR: file already exists");
+                throw new Exception("ERR: file already exists");
             }
         }
         
@@ -110,16 +110,16 @@ private int calculateBlocksNeeded(int dataSize) {
                 fileEntries[i].setFilesize((short)0);
                 fileEntries[i].setFirstBlock((short)-1);
                 System.out.println("Created: " + fileName);
-                saveToDisk();
+                save_to_disk();
                 return;
             }
         }
         
-        throw new Exception("ERROR: no space");
+        throw new Exception("ERR: no space");
     }
 
     //list files method
-    public String[] listFiles() {
+    public String[] list_files() {
         int count = 0;
         for (FEntry entry : fileEntries) {
             if (!entry.getFilename().trim().isEmpty()) {
@@ -141,7 +141,7 @@ private int calculateBlocksNeeded(int dataSize) {
     }
 
 // delete method
-public void deleteFile(String fileName) throws Exception {
+public void delete_file(String fileName) throws Exception {
     // Look for the file
     for (int i = 0; i < MAXFILES; i++) {
         if (fileName.equals(fileEntries[i].getFilename())) {
@@ -153,9 +153,9 @@ public void deleteFile(String fileName) throws Exception {
                 
                 while (currentBlock != -1) {
                     //overwriting with zeroes
-                    clearBlockData(currentBlock);
+                    clear_block_data(currentBlock);
                     //freeing the block
-                    freeBlock(currentBlock);
+                    mark_free_block(currentBlock);
                     
                     FNode currentNode = fileNodes[currentBlock];
                     currentBlock = currentNode.getNext();
@@ -170,36 +170,36 @@ public void deleteFile(String fileName) throws Exception {
             fileEntries[i].setFilesize((short)0);
             fileEntries[i].setFirstBlock((short)-1);
             
-            System.out.println("Deleted: " + fileName + " and freed blocks");
-            saveToDisk();
+            System.out.println("Deleted: " + fileName );
+            save_to_disk();
             return;
         }
     }
     
-    throw new Exception("ERROR: file " + fileName + " does not exist");
+    throw new Exception("ERR: file " + fileName + " doesn't exist");
 }
 
 //read method 
-public byte[] readFile(String fileName) throws Exception {
+public byte[] read_file(String fileName) throws Exception {
     //finding the file
-    FEntry fileToRead = null;
+    FEntry file_to_read = null;
     for (FEntry entry : fileEntries) {
         if (fileName.equals(entry.getFilename())) {
-            fileToRead = entry;
+            file_to_read = entry;
             break;
         }
     }
     
-    if (fileToRead == null) {
-        throw new Exception("ERROR: file " + fileName + " does not exist");
+    if (file_to_read == null) {
+        throw new Exception("ERR: file " + fileName + " does not exist");
     }
     
-    if (fileToRead.getFirstBlock() == -1) {
+    if (file_to_read.getFirstBlock() == -1) {
         return new byte[0];
     }
     
-    int fileSize = fileToRead.getFilesize();
-    int currentBlock = fileToRead.getFirstBlock();
+    int fileSize = file_to_read.getFilesize();
+    int currentBlock = file_to_read.getFirstBlock();
     int bytesRead = 0;
     
     System.out.println("Reading file: " + fileName + " (" + fileSize + " bytes)");
@@ -208,8 +208,8 @@ public byte[] readFile(String fileName) throws Exception {
         FNode currentNode = fileNodes[currentBlock];
         System.out.println("  Reading from block " + currentBlock);
         
-        int bytesInThisBlock = Math.min(BLOCK_SIZE, fileSize - bytesRead);
-        bytesRead += bytesInThisBlock;
+        int block_bytes = Math.min(BLOCK_SIZE, fileSize - bytesRead);
+        bytesRead += block_bytes;
         
         currentBlock = currentNode.getNext();
     }
@@ -221,35 +221,35 @@ public byte[] readFile(String fileName) throws Exception {
 }
 
 // write method
-public void writeFile(String fileName, byte[] content) throws Exception {
-    FEntry fileToWrite = null;
+public void write_file(String fileName, byte[] content) throws Exception {
+    FEntry file_to_write = null;
     for (FEntry entry : fileEntries) {
         if (fileName.equals(entry.getFilename())) {
-            fileToWrite = entry;
+            file_to_write = entry;
             break;
         }
     }
-    if (fileToWrite == null) {
-        throw new Exception("ERROR: file " + fileName + " does not exist");
+    if (file_to_write == null) {
+        throw new Exception("ERR: file " + fileName + " does not exist");
     }
     
-    int blocksNeeded = calculateBlocksNeeded(content.length);
+    int blocksNeeded = calculate_blocks_needed(content.length);
     int freeBlocks = 0;
     for (boolean free : freeBlockList) {
         if (free) freeBlocks++;
     }
     
     if (blocksNeeded > freeBlocks) {
-        throw new Exception("ERROR: not enough free blocks");
+        throw new Exception("ERR: not enough free blocks");
     }
     
     //deleting the already exisiting data
-    if (fileToWrite.getFirstBlock() != -1) {
-        deleteFile(fileName);
+    if (file_to_write.getFirstBlock() != -1) {
+        delete_file(fileName);
         
         for (FEntry entry : fileEntries) {
             if (fileName.equals(entry.getFilename())) {
-                fileToWrite = entry;
+                file_to_write = entry;
                 break;
             }
         }
@@ -260,18 +260,18 @@ public void writeFile(String fileName, byte[] content) throws Exception {
     int previousBlock = -1;
     
     for (int i = 0; i < blocksNeeded; i++) {
-        int freeBlock = findFreeBlock();
+        int freeBlock = find_free_block();
         if (freeBlock == -1) {
-            throw new Exception("ERROR: no free blocks");
+            throw new Exception("ERR: no free blocks");
         }
         
-        useBlock(freeBlock);
+        used_block(freeBlock);
         
         fileNodes[freeBlock].setBlockIndex(freeBlock);
        
         if (firstBlock == -1) {
             firstBlock = freeBlock;
-            fileToWrite.setFirstBlock((short)freeBlock);
+            file_to_write.setFirstBlock((short)freeBlock);
         } else {
             fileNodes[previousBlock].setNext(freeBlock);
         }
@@ -280,12 +280,12 @@ public void writeFile(String fileName, byte[] content) throws Exception {
     }
     
     //updating file size
-    fileToWrite.setFilesize((short)content.length);
+    file_to_write.setFilesize((short)content.length);
     
-    System.out.println("Wrote " + content.length + " bytes to " + fileName + 
+    System.out.println("Written " + content.length + " bytes to " + fileName + 
                       " using " + blocksNeeded + " blocks");
 
-    saveToDisk();
+    save_to_disk();
 }
 
 
