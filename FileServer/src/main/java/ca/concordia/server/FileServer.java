@@ -11,11 +11,10 @@ public class FileServer {
 
     private FileSystemManager fsManager;
     private int port;
-    public FileServer(int port, String fileSystemName, int totalSize){
+    
+    public FileServer(int port, String fileSystemName, int totalSize) throws Exception {
         // Initialize the FileSystemManager
-        FileSystemManager fsManager = new FileSystemManager(fileSystemName,
-                10*128 );
-        this.fsManager = fsManager;
+        this.fsManager = new FileSystemManager(fileSystemName, 10, 20, 128);
         this.port = port;
     }
 
@@ -38,11 +37,30 @@ public class FileServer {
 
                         switch (command) {
                             case "CREATE":
-                                fsManager.createFile(parts[1]);
+                                fsManager.create_file(parts[1]);
                                 writer.println("SUCCESS: File '" + parts[1] + "' created.");
                                 writer.flush();
                                 break;
-                            //TODO: Implement other commands READ, WRITE, DELETE, LIST
+                            case "DELETE":
+                                fsManager.delete_file(parts[1]);
+                                writer.println("SUCCESS: File '" + parts[1] + "' deleted.");
+                                break;
+                            case "READ":
+                                byte[] content = fsManager.read_file(parts[1]);
+                                writer.println("SUCCESS: Read " + content.length + " bytes from '" + parts[1] + "'");
+                                break;
+                            case "WRITE":
+                                byte[] data = new byte[0];
+                                if (parts.length > 2) {
+                                    data = parts[2].getBytes();
+                                }
+                                fsManager.write_file(parts[1], data);
+                                writer.println("SUCCESS: Written to file '" + parts[1] + "'");
+                                break;
+                            case "LIST":
+                                String[] files = fsManager.list_files();
+                                writer.println("FILES: " + String.join(", ", files));
+                                break;
                             case "QUIT":
                                 writer.println("SUCCESS: Disconnecting.");
                                 return;
@@ -66,5 +84,4 @@ public class FileServer {
             System.err.println("Could not start server on port " + port);
         }
     }
-
 }
