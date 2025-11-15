@@ -1,7 +1,5 @@
 package ca.concordia.filesystem.datastructures;
 
-import java.util.LinkedList;
-
 public class FEntry { //
 
     private String filename;

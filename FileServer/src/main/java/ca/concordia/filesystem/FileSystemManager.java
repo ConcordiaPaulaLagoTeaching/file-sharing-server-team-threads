@@ -18,7 +18,7 @@ private final int BLOCK_SIZE;
     private boolean[] freeBlockList; // For free blocks
 
 
-    //using hashmap to store contents of WRITE command that can be read
+    //using hashmap to store contents of WRITE command that can be READ
     private java.util.HashMap<String, byte[]> file_contents = new java.util.HashMap<>();
 
 
@@ -124,9 +124,9 @@ private final Object file_lock = new Object();
     }
 
     //checking if block is free
-private boolean is_block_free(int blockIndex) {
+/*private boolean is_block_free(int blockIndex) {
     return freeBlockList[blockIndex];
-}
+} */
 
 //marking the free block
 private void mark_free_block(int blockIndex) {
@@ -164,23 +164,23 @@ private int calculate_blocks_needed(int dataSize) {
 
   //create file method
     public void create_file(String fileName) throws Exception {
-        synchronized(file_lock){
+        synchronized(file_lock){ //synchronized to prevent race condition while creating file
         try {
             if (fileName.length() > 11) {
                 throw new Exception("ERR: file is too large");
             }
-            
+            //checking if file alrteady exists
             for (FEntry entry : fileEntries) {
                 if (fileName.equals(entry.getFilename())) {
                     throw new Exception("ERR: file already exists");
                 }
             }
-            
+            //finding empty slot in file enteries array
             for (int i = 0; i < MAXFILES; i++) {
                 if (fileEntries[i].getFilename().trim().isEmpty()) {
                     fileEntries[i].setFilename(fileName);
                     fileEntries[i].setFilesize((short)0);
-                    fileEntries[i].setFirstBlock((short)-1);
+                    fileEntries[i].setFirstBlock((short)-1); //no data blocks added
                     System.out.println("Created: " + fileName);
                     save_to_disk();
                     return;
@@ -188,9 +188,7 @@ private int calculate_blocks_needed(int dataSize) {
             }
             
             throw new Exception("ERR: no space");
-        } finally {
-            
-        } }
+        } finally {} } //lock released
     }
 
 
@@ -275,8 +273,6 @@ public byte[] read_file(String fileName) throws Exception {
 
          //debug statements
         System.out.println("read lock acq: "+fileName);
-        //sleep to test
-        Thread.sleep(4000);
 
 
         //finding the file
@@ -292,16 +288,18 @@ public byte[] read_file(String fileName) throws Exception {
             throw new Exception("ERR: file " + fileName + " does not exist");
         }
         
-        if (file_to_read.getFirstBlock() == -1) {
+        if (file_to_read.getFirstBlock() == -1) { //return empty if file has no content
             return new byte[0];
         }
         
+        //counting blocks used by this file
         int fileSize = file_to_read.getFilesize();
         int currentBlock = file_to_read.getFirstBlock();
         int bytesRead = 0;
         
         System.out.println("Reading file: " + fileName + " (" + fileSize + " bytes)");
-       
+      
+        //calculating total size
         while (currentBlock != -1 && bytesRead < fileSize) {
             FNode currentNode = fileNodes[currentBlock];
             System.out.println("  Reading from block " + currentBlock);
@@ -312,6 +310,7 @@ public byte[] read_file(String fileName) throws Exception {
             currentBlock = currentNode.getNext();
         }
         
+        //get file contents from hashmap
         if (file_contents.containsKey(fileName)) {
             byte[] content = file_contents.get(fileName); //this to read actual content from the txt files- fixed
             System.out.println("Successfully read " + content.length + " bytes from " + fileName);
@@ -326,9 +325,8 @@ public byte[] read_file(String fileName) throws Exception {
 //write method
 public void write_file(String fileName, byte[] content) throws Exception {
     synchronized(file_lock) {
-        System.out.println("write lock acq: " + fileName);
-        Thread.sleep(8000);  //test sleep
 
+        //finding file entry
         FEntry file_to_write = null;
         for (FEntry entry : fileEntries) {
             if (fileName.equals(entry.getFilename())) {
@@ -342,7 +340,7 @@ public void write_file(String fileName, byte[] content) throws Exception {
 
         file_contents.put(fileName, content);  //to store actual file content in hashmap
 
-        
+        //calculating reqiured blocks to write and cheching available space
         int blocksNeeded = calculate_blocks_needed(content.length);
         int freeBlocks = 0;
         for (boolean free : freeBlockList) {
@@ -353,7 +351,7 @@ public void write_file(String fileName, byte[] content) throws Exception {
             throw new Exception("ERR: not enough free blocks");
         }
         
-        //fixed write method, freeing exisiting blocks for rewrite
+        //fixed write method, freeing exisiting blocks for overwrite
         if (file_to_write.getFirstBlock() != -1) {
             short firstBlock = file_to_write.getFirstBlock();
             int currentBlock = firstBlock;
@@ -364,9 +362,9 @@ public void write_file(String fileName, byte[] content) throws Exception {
                 
                 //clear block data
                 clear_block_data(currentBlock);
-                //free the block
+                //mark as free
                 mark_free_block(currentBlock);
-               
+               //reset node metadata
                 currentNode.setBlockIndex(-1);
                 currentNode.setNext(-1);
                 
