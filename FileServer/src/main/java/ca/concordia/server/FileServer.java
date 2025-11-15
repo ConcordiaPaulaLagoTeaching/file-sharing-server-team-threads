@@ -34,7 +34,7 @@ public class FileServer {
         }
     }
 
-    //handle one client
+    //handle communication with one client
     private void handle_client(Socket client_socket) {
         System.out.println("Handling client in new thread: " + client_socket);
         
@@ -51,6 +51,7 @@ public class FileServer {
                     break;
                 }
                 
+                //process commands and send response back to client
                 String response = process_command(line);
                 writer.println(response);
             }
@@ -69,6 +70,7 @@ public class FileServer {
     //method to handle commands in each client, seperated
     private String process_command(String command_line) {
         try {
+            //spliting commands into parts- command, filename, content 
             String[] parts = command_line.split(" ", 3);
             String command = parts[0].toUpperCase();
 
