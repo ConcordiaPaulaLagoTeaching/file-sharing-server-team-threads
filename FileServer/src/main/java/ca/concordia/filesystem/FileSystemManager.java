@@ -18,6 +18,10 @@ private final int BLOCK_SIZE;
     private boolean[] freeBlockList; // For free blocks
 
 
+    //using hashmap to store contents of WRITE command that can be read
+    private java.util.HashMap<String, byte[]> file_contents = new java.util.HashMap<>();
+
+
 //lock for synchronization
 private final Object file_lock = new Object();
 
@@ -254,6 +258,7 @@ public void delete_file(String fileName) throws Exception {
                 
                 System.out.println("Deleted: " + fileName );
                 save_to_disk();
+                file_contents.remove(fileName);  //remove content from HashMap
                 return;
             }
         }
@@ -269,7 +274,7 @@ public byte[] read_file(String fileName) throws Exception {
     synchronized(file_lock){
 
          //debug statements
-        System.out.println("write lock acq"+fileName);
+        System.out.println("read lock acq: "+fileName);
         //sleep to test
         Thread.sleep(4000);
 
@@ -307,10 +312,13 @@ public byte[] read_file(String fileName) throws Exception {
             currentBlock = currentNode.getNext();
         }
         
-        byte[] fileData = new byte[fileSize];
-        System.out.println("Successfully read " + fileSize + " bytes from " + fileName);
-        
-        return fileData;
+        if (file_contents.containsKey(fileName)) {
+            byte[] content = file_contents.get(fileName); //this to read actual content from the txt files- fixed
+            System.out.println("Successfully read " + content.length + " bytes from " + fileName);
+            return content;
+        } else {
+            return new byte[0];  
+        }
      }
 }
 
@@ -318,7 +326,7 @@ public byte[] read_file(String fileName) throws Exception {
 //write method
 public void write_file(String fileName, byte[] content) throws Exception {
     synchronized(file_lock) {
-        System.out.println("write lock acq" + fileName);
+        System.out.println("write lock acq: " + fileName);
         Thread.sleep(8000);  //test sleep
 
         FEntry file_to_write = null;
@@ -331,6 +339,9 @@ public void write_file(String fileName, byte[] content) throws Exception {
         if (file_to_write == null) {
             throw new Exception("ERR: file " + fileName + " does not exist");
         }
+
+        file_contents.put(fileName, content);  //to store actual file content in hashmap
+
         
         int blocksNeeded = calculate_blocks_needed(content.length);
         int freeBlocks = 0;
